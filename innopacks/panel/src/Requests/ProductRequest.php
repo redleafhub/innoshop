@@ -45,7 +45,7 @@ class ProductRequest extends FormRequest
 
             "translations.$defaultLocale.locale"           => 'required',
             "translations.$defaultLocale.name"             => 'required',
-            "translations.$defaultLocale.content"          => 'max:20000',
+            "translations.$defaultLocale.content"          => 'max:2000000',// 最大200W长度
             "translations.$defaultLocale.meta_title"       => 'max:60',
             "translations.$defaultLocale.meta_description" => 'max:160',
             "translations.$defaultLocale.meta_keywords"    => 'max:100',
