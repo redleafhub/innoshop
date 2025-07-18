@@ -50,11 +50,11 @@
   <div class="header-desktop">
     <div class="container d-flex justify-content-between align-items-center">
       <div class="left">
-        <h1 class="logo">
+        <div class="logo">
           <a href="{{ front_route('home.index') }}">
             <img src="{{ image_origin(system_setting('front_logo', 'images/logo.svg')) }}" class="img-fluid">
           </a>
-        </h1>
+        </div>
         <div class="menu">
           <nav class="navbar navbar-expand-md navbar-light">
             <ul class="navbar-nav">
