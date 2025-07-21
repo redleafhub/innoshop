@@ -34,12 +34,22 @@
       </div>
 
       <div class="top-info">
+        @hookupdate('layouts.header.tg_channel')
+        @if (system_setting('tg_channel'))
+          <a href="{{ system_setting('tg_channel') }}" target="_blank" title="Tg Channel">
+            <span><i class="bi bi-telegram fs-3"></i></span>
+          </a>
+        @endif
+        @endhookupdate
+
         @hookinsert('layouts.header.news.before')
-        <a href="{{ front_route('articles.index') }}">News</a>
+        <a href="{{ front_route('articles.index') }}" title="News">
+          <span><i class="bi bi-book fs-3"></i></span>
+        </a>
 
         @hookupdate('layouts.header.telephone')
         @if (system_setting('telephone'))
-          <a href="tel:{{ system_setting('telephone') }}">
+          <a href="tel:{{ system_setting('telephone') }}" target="_blank" title="Telephone">
             <span><i class="bi bi-telephone-outbound"></i> {{ system_setting('telephone') }}</span>
           </a>
         @endif
