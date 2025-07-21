@@ -72,11 +72,11 @@ class CartService
      * @param  array  $filters
      * @return Collection
      */
-    public function getCartItems(array $filters = []): Collection
+    public function getCartItems(array $filters = [], $withHook = true): Collection
     {
         $cartItems = $this->getCartBuilder($filters)->get();
 
-        return $cartItems->filter(function ($item) {
+        $cartItems = $cartItems->filter(function ($item) use ($withHook) {
             if (empty($item->product) || empty($item->productSku)) {
                 $item->delete();
 
@@ -84,10 +84,19 @@ class CartService
             }
 
             $item->is_stock_enough = $this->stockService->checkStock($item->sku_code, $item->quantity, $item->id);
-            fire_hook_action('service.cart.items.item', $item);
+
+            if ($withHook) {
+                fire_hook_action('service.cart.items.item', $item);
+            }
 
             return true;
         });
+
+        if ($withHook) {
+            $cartItems = fire_hook_filter('service.cart.items', $cartItems);
+        }
+
+        return $cartItems;
     }
 
     /**
@@ -263,7 +272,7 @@ class CartService
      * @return void
      * @throws Throwable
      */
-    public function reorder(Order $order): void
+    public function addOrderToCart(Order $order): void
     {
         $this->unselectAll();
         foreach ($order->items as $item) {
@@ -271,6 +280,7 @@ class CartService
             $data       = [
                 'sku_id'   => $productSku->id,
                 'quantity' => $item->quantity,
+                'selected' => true,
             ];
             $this->addCart($data);
         }

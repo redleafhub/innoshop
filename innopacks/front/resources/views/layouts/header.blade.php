@@ -34,22 +34,12 @@
       </div>
 
       <div class="top-info">
-        @hookupdate('layouts.header.tg_channel')
-        @if (system_setting('tg_channel'))
-          <a href="{{ system_setting('tg_channel') }}" target="_blank" title="Tg Channel">
-            <span><i class="bi bi-telegram fs-3"></i></span>
-          </a>
-        @endif
-        @endhookupdate
-
         @hookinsert('layouts.header.news.before')
-        <a href="{{ front_route('articles.index') }}" title="News">
-          <span><i class="bi bi-book fs-3"></i></span>
-        </a>
+        <a href="{{ front_route('articles.index') }}">News</a>
 
         @hookupdate('layouts.header.telephone')
         @if (system_setting('telephone'))
-          <a href="tel:{{ system_setting('telephone') }}" target="_blank" title="Telephone">
+          <a href="tel:{{ system_setting('telephone') }}">
             <span><i class="bi bi-telephone-outbound"></i> {{ system_setting('telephone') }}</span>
           </a>
         @endif
@@ -60,11 +50,11 @@
   <div class="header-desktop">
     <div class="container d-flex justify-content-between align-items-center">
       <div class="left">
-        <div class="logo">
+        <h1 class="logo">
           <a href="{{ front_route('home.index') }}">
             <img src="{{ image_origin(system_setting('front_logo', 'images/logo.svg')) }}" class="img-fluid">
           </a>
-        </div>
+        </h1>
         <div class="menu">
           <nav class="navbar navbar-expand-md navbar-light">
             <ul class="navbar-nav">

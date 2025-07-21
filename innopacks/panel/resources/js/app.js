@@ -1,11 +1,12 @@
-import "./bootstrap";
+import "./http";
 import "./bootstrap-validation";
 import "./autocomplete";
 import common from "./common";
 import dominateColor from "./dominate_color";
+import ProductSelector from './product_selector';
 
 const Config = {
-  base: document.querySelector("base").href,
+  base: document.querySelector("base")?.href || window.location.origin,
   editorLanguage: document.querySelector('meta[name="editor_language"]')?.content || "zh_cn",
   apiToken: $('meta[name="api-token"]').attr("content") ||
             $(window.parent.document).find('meta[name="api-token"]').attr("content"),
@@ -139,23 +140,27 @@ const UI = {
 
   initAIGenerate: () => {
     $(document).on("click", ".ai-generate", function (e) {
+      // 找到当前按钮所在的 form-row
       const $row = $(this).closest(".form-row");
+      // 在 row 内查找 input 或 textarea
       const $input = $row.find("input[data-column], textarea[data-column]");
       if ($input.length === 0) {
-        layer.msg('Cloud not find input or textarea', { icon: 2 });
+        layer.msg('未找到对应输入框', { icon: 2 });
         return;
       }
-
+      // 获取字段名、语言、当前值
       const column = $input.data('column');
       const lang = $input.data('lang');
       const name = $input.attr('name');
       const value = $input.val();
 
+      // 组装请求数据
       const formData = {
         column: column,
         lang: lang,
         name: name,
         value: value,
+        // 可根据需要添加 product_id 等其它参数
       };
 
       layer.load(2, { shade: [0.3, "#fff"] });
@@ -169,7 +174,7 @@ const UI = {
           }
         })
         .catch(function (err) {
-          layer.msg(err.response?.data?.message || 'AI Generate Fail', { icon: 2 });
+          layer.msg(err.response?.data?.message || 'AI生成失败，请重试', { icon: 2 });
         })
         .finally(function () {
           layer.closeAll("loading");
@@ -270,8 +275,9 @@ const Editor = {
       onAction: () => {
         FileManager.init(
           (file) => {
-            if (file.url) {
-              ed.insertContent(`<img src="${file.url}" class="img-fluid" />`);
+            const imageUrl = file.origin_url || file.url;
+            if (imageUrl) {
+              ed.insertContent(`<img src="${imageUrl}" class="img-fluid" alt="${file.name || ''}" />`);
             }
           },
           { type: "image", multiple: false }
@@ -325,9 +331,12 @@ const Editor = {
   }
 };
 
+
+
 $(function() {
   window.dominateColor = dominateColor;
   window.inno.fileManagerIframe = FileManager.init;
+  window.inno.productSelectorIframe = ProductSelector.init;
 
   Utils.setupApiHeaders();
 

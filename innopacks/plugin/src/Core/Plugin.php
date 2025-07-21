@@ -319,6 +319,11 @@ final class Plugin implements Arrayable, ArrayAccess
         return $this->version;
     }
 
+    public function getFirstLetter(): string
+    {
+        return strtoupper(substr($this->getCode(), 0, 1));
+    }
+
     public function getEditUrl(): string
     {
         $viewFile = $this->getPath().'/Views/panel/config.blade.php';
@@ -326,7 +331,11 @@ final class Plugin implements Arrayable, ArrayAccess
             return '';
         }
 
-        return panel_route('plugins.edit', ['plugin' => $this->code]);
+        try {
+            return panel_route('plugins.edit', ['plugin' => $this->code]);
+        } catch (Exception $e) {
+            return '';
+        }
     }
 
     public function checkActive(): bool

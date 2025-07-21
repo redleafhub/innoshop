@@ -3,11 +3,15 @@
 
 @section('title', __('panel/menu.orders'))
 
+@section('page-title-right')
+  @hookinsert('panel.orders.index.title.right')
+@endsection
+
 @section('content')
   <div class="card h-min-600">
     <div class="card-body">
 
-      <x-panel-data-criteria :criteria="$criteria ?? []" :action="panel_route('orders.index')" />
+      <x-panel-data-criteria :criteria="$criteria ?? []" :action="panel_route('orders.index')" :export="true" />
 
       @if ($orders->count())
         <div class="table-responsive">
