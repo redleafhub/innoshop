@@ -81,7 +81,7 @@
           <div class="col-md-6">
             <div class="left-links">
               {!! innoshop_brand_link() !!}
-              <!-- Powered By InnoShop {{ innoshop_version() }} -->
+{{--              <!-- Powered By InnoShop {{ innoshop_version() }} -->--}}
               <span class="copyright-text">
                 <a href="{{ front_route('home.index') }}" class="ms-2" target="_blank">{{ config('app.name') }}</a>
                 &copy; {{ date('Y') }} All Rights Reserved

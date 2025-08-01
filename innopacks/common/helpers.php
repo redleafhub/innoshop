@@ -1188,15 +1188,16 @@ if (! function_exists('innoshop_version')) {
 if (! function_exists('innoshop_brand_link')) {
     /**
      * Get innoshop brand link
-     *
      * @return string
+     * @throws Exception
      */
     function innoshop_brand_link(): string
     {
         if (is_admin()) {
             $default = '<a href="https://www.innoshop.com" class="ms-2" target="_blank">InnoShop</a>';
         } else {
-            $default = 'Powered By <a href="https://www.innoshop.com" class="ms-2" target="_blank">InnoShop</a>';
+            $url     = front_route('home.index');
+            $default = "Powered By <a href='{$url}' class='ms-2' target='_blank'>Buddha3Bodhi</a>";
         }
 
         return fire_hook_filter('innoshop.brand.link.display', $default);
