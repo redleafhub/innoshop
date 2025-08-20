@@ -60,6 +60,10 @@ final class Plugin implements Arrayable, ArrayAccess
 
     protected array $fields = [];
 
+    protected string $authorName = '';
+
+    protected string $authorEmail = '';
+
     public function __construct(string $path, array $packageInfo)
     {
         $this->path        = $path;
@@ -148,14 +152,38 @@ final class Plugin implements Arrayable, ArrayAccess
     }
 
     /**
-     * @param  string  $author
+     * Set author info
+     *
+     * @param  array  $author
      * @return $this
      */
-    public function setAuthor(string $author): self
+    public function setAuthor($author): self
     {
-        $this->author = $author;
+        $this->authorName  = $author['name'];
+        $this->authorEmail = $author['email'];
+        $this->author      = $author['name'].' <'.$author['email'].'>';
 
         return $this;
+    }
+
+    /**
+     * Get author name
+     *
+     * @return string
+     */
+    public function getAuthorName(): string
+    {
+        return $this->authorName;
+    }
+
+    /**
+     * Get author email
+     *
+     * @return string
+     */
+    public function getAuthorEmail(): string
+    {
+        return $this->authorEmail;
     }
 
     /**
@@ -289,6 +317,11 @@ final class Plugin implements Arrayable, ArrayAccess
         return $this->type;
     }
 
+    public function getTypeFormat(): string
+    {
+        return trans("panel/plugin.{$this->type}");
+    }
+
     public function getCode(): string
     {
         return $this->code;
@@ -309,6 +342,11 @@ final class Plugin implements Arrayable, ArrayAccess
         return $this->icon;
     }
 
+    public function getIconUrl(): string
+    {
+        return plugin_resize($this->code, $this->icon);
+    }
+
     public function getAuthor(): string
     {
         return $this->author;
@@ -326,11 +364,6 @@ final class Plugin implements Arrayable, ArrayAccess
 
     public function getEditUrl(): string
     {
-        $viewFile = $this->getPath().'/Views/panel/config.blade.php';
-        if (empty($this->fields) && ! file_exists($viewFile) && $this->type != 'billing') {
-            return '';
-        }
-
         try {
             return panel_route('plugins.edit', ['plugin' => $this->code]);
         } catch (Exception $e) {
@@ -492,14 +525,14 @@ final class Plugin implements Arrayable, ArrayAccess
     private function transLabel($item): mixed
     {
         $labelKey = $item['label_key'] ?? '';
-        $label    = $item['label']     ?? '';
+        $label    = $item['label'] ?? '';
         if (empty($label) && $labelKey) {
             $languageKey   = "$this->dirName::$labelKey";
             $item['label'] = trans($languageKey);
         }
 
         $descriptionKey = $item['description_key'] ?? '';
-        $description    = $item['description']     ?? '';
+        $description    = $item['description'] ?? '';
         if (empty($description) && $descriptionKey) {
             $languageKey         = "$this->dirName::$descriptionKey";
             $item['description'] = trans($languageKey);
@@ -543,5 +576,54 @@ final class Plugin implements Arrayable, ArrayAccess
     public function offsetUnset($offset): void
     {
         unset($this->packageInfo[$offset]);
+    }
+
+    /**
+     * Get plugin README.md file path
+     *
+     * @return string
+     */
+    public function getReadmePath(): string
+    {
+        // Get current locale code
+        $localeCode = plugin_locale_code();
+
+        // Try to get README file for current locale
+        if ($localeCode) {
+            $localizedReadme = $this->getPath().DIRECTORY_SEPARATOR.'README.'.$localeCode.'.md';
+            if (file_exists($localizedReadme)) {
+                return $localizedReadme;
+            }
+        }
+
+        // Fallback to default README.md
+        return $this->getPath().DIRECTORY_SEPARATOR.'README.md';
+    }
+
+    /**
+     * Get plugin README.md content
+     *
+     * @return string
+     */
+    public function getReadme(): string
+    {
+        $readmePath = $this->getReadmePath();
+        if (file_exists($readmePath)) {
+            return file_get_contents($readmePath);
+        }
+
+        return '';
+    }
+
+    /**
+     * Get plugin README.md content
+     *
+     * @return string
+     */
+    public function getReadmeHtml(): string
+    {
+        $readme = $this->getReadme();
+
+        return parsedown($readme);
     }
 }

@@ -80,6 +80,15 @@ class ProductRepo extends BaseRepo
         $criteria = [
             ['name' => 'keyword', 'type' => 'input', 'label' => trans('panel/common.name')],
             [
+                'name'              => 'sku_code',
+                'type'              => 'autocomplete',
+                'label'             => trans('panel/product.sku_code'),
+                'url'               => route('api.panel.products.sku_autocomplete'),
+                'hidden_input_name' => 'sku_id',
+                'option_label_key'  => 'display_name',
+                'input_value_key'   => 'code',
+            ],
+            [
                 'name'  => 'category',
                 'type'  => 'autocomplete',
                 'label' => trans('panel/product.category'),
@@ -134,7 +143,7 @@ class ProductRepo extends BaseRepo
      */
     private function applySorting(Builder $builder, array $filters): void
     {
-        $sort  = $filters['sort']  ?? 'updated_at';
+        $sort  = $filters['sort'] ?? 'created_at';
         $order = $filters['order'] ?? 'desc';
 
         if ($sort == 'pt.name') {
@@ -152,7 +161,7 @@ class ProductRepo extends BaseRepo
         }
 
         if (! in_array($sort, self::AVAILABLE_SORT_FIELDS)) {
-            $sort = 'updated_at';
+            $sort = 'created_at';
         }
 
         if (! in_array($order, ['asc', 'desc'])) {
@@ -558,21 +567,27 @@ class ProductRepo extends BaseRepo
             $variables = json_decode($variables, true);
         }
 
+        $video = $data['video'] ?? null;
+        if (is_string($video)) {
+            $video = json_decode($video, true);
+        }
+
         return [
-            'type'         => $data['type']         ?? Product::TYPE_NORMAL,
-            'spu_code'     => $data['spu_code']     ?? null,
-            'slug'         => $data['slug']         ?? null,
-            'brand_id'     => $data['brand_id']     ?? 0,
-            'images'       => $data['images']       ?? [],
+            'type'         => $data['type'] ?? Product::TYPE_NORMAL,
+            'spu_code'     => $data['spu_code'] ?? null,
+            'slug'         => $data['slug'] ?? null,
+            'brand_id'     => $data['brand_id'] ?? 0,
+            'images'       => $data['images'] ?? [],
+            'video'        => $video,
             'tax_class_id' => $data['tax_class_id'] ?? 0,
             'variables'    => $variables,
             'position'     => (int) ($data['position'] ?? 0),
-            'weight'       => $data['weight']       ?? 0,
+            'weight'       => $data['weight'] ?? 0,
             'weight_class' => $data['weight_class'] ?? '',
             'sales'        => (int) ($data['sales'] ?? 0),
             'viewed'       => (int) ($data['viewed'] ?? 0),
             'published_at' => $data['published_at'] ?? now(),
-            'active'       => (bool) ($data['active'] ?? true),
+            'active'       => (bool) ($data['active'] ?? false),
         ];
     }
 
@@ -796,6 +811,13 @@ class ProductRepo extends BaseRepo
             });
         }
 
+        $skuId = $filters['sku_id'] ?? '';
+        if ($skuId) {
+            $builder->whereHas('skus', function (Builder $query) use ($skuId) {
+                $query->where('id', $skuId);
+            });
+        }
+
         return fire_hook_filter('repo.product.builder', $builder);
     }
 
@@ -831,12 +853,12 @@ class ProductRepo extends BaseRepo
      * Get product list by IDs.
      *
      * @param  mixed  $productIDs
-     * @return mixed
+     * @return Collection
      */
-    public function getListByProductIDs(mixed $productIDs): mixed
+    public function getListByProductIDs(mixed $productIDs): Collection
     {
         if (empty($productIDs)) {
-            return [];
+            return collect();
         }
         if (is_string($productIDs)) {
             $productIDs = explode(',', $productIDs);

@@ -10,7 +10,6 @@
 use Barryvdh\Debugbar\Facades\Debugbar;
 use Detection\Exception\MobileDetectException;
 use Detection\MobileDetect;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -265,7 +264,7 @@ if (! function_exists('current_customer')) {
     /**
      * Get current customer.
      */
-    function current_customer(): ?Authenticatable
+    function current_customer(): mixed
     {
         return auth('customer')->user();
     }
@@ -374,7 +373,7 @@ if (! function_exists('is_setting_locale')) {
 
 if (! function_exists('language_codes')) {
     /**
-     * 获取语言包列表
+     * Get language package list
      * @return array
      */
     function language_codes(): array
@@ -707,7 +706,7 @@ if (! function_exists('image_origin')) {
             return $image;
         }
 
-        return (new ImageService($image))->originUrl();
+        return (new ImageService((string) $image))->originUrl();
     }
 }
 
@@ -876,13 +875,23 @@ if (! function_exists('equal_route_name')) {
     /**
      * Check route is current
      *
-     * @param  $routeName
+     * @param  string|array  $routeName
+     * @param  string|null  $prefix  Remove specific prefix from route name
      * @return bool
      */
-    function equal_route_name($routeName): bool
+    function equal_route_name($routeName, ?string $prefix = null): bool
     {
         $currentRouteName = Route::getCurrentRoute()->getName();
-        $currentRouteName = str_replace(front_locale_code().'.', '', $currentRouteName);
+
+        // Default prefix removal (locale code)
+        $defaultPrefix    = front_locale_code().'.';
+        $currentRouteName = str_replace($defaultPrefix, '', $currentRouteName);
+
+        // Remove additional prefix if provided
+        if ($prefix !== null) {
+            $currentRouteName = str_replace($prefix, '', $currentRouteName);
+        }
+
         if (is_string($routeName)) {
             return $currentRouteName == $routeName;
         } elseif (is_array($routeName)) {
@@ -890,6 +899,20 @@ if (! function_exists('equal_route_name')) {
         }
 
         return false;
+    }
+}
+
+if (! function_exists('equal_account_route_name')) {
+    /**
+     * Check account route is current
+     * This is a shorthand for equal_route_name() with account prefix
+     *
+     * @param  string|array  $routeName
+     * @return bool
+     */
+    function equal_account_route_name($routeName): bool
+    {
+        return equal_route_name($routeName, 'front.account.');
     }
 }
 
@@ -1087,7 +1110,12 @@ if (! function_exists('theme_asset')) {
 
         should_copy_static_file($sourceFile, $destFile);
 
-        return app('url')->asset($destThemePath, $secure);
+        $assetUrl = app('url')->asset($destThemePath, $secure);
+
+        $version   = file_exists($destFile) ? filemtime($destFile) : time();
+        $separator = strpos($assetUrl, '?') !== false ? '&' : '?';
+
+        return $assetUrl.$separator.'v='.$version;
     }
 }
 
@@ -1296,6 +1324,31 @@ if (! function_exists('weight_format')) {
     }
 }
 
+if (! function_exists('ini_size_to_bytes')) {
+    /**
+     * Convert PHP ini size value to bytes
+     *
+     * @param  string  $size  PHP ini size value (e.g. "8M", "2G")
+     * @return int
+     */
+    function ini_size_to_bytes(string $size): int
+    {
+        $unit  = strtoupper(substr($size, -1));
+        $value = (int) substr($size, 0, -1);
+
+        switch ($unit) {
+            case 'K':
+                return $value * 1024;
+            case 'M':
+                return $value * 1024 * 1024;
+            case 'G':
+                return $value * 1024 * 1024 * 1024;
+            default:
+                return (int) $size;
+        }
+    }
+}
+
 if (! function_exists('weight_to_default')) {
     /**
      * Convert weight to system default unit
@@ -1341,5 +1394,114 @@ if (! function_exists('registry')) {
     function registry(string $key, mixed $default = null): mixed
     {
         return Registry::get($key, $default);
+    }
+}
+
+if (! function_exists('theme_css')) {
+    /**
+     * Smart theme CSS loading
+     * Priority: Theme compiled CSS > Default frontend compiled CSS
+     *
+     * @param  string  $path  CSS file path (supports 'app', 'bootstrap')
+     * @param  string  $theme  Theme name (default from system settings)
+     * @param  bool|null  $secure  Whether to use HTTPS
+     * @return string CSS file URL
+     */
+    function theme_css(string $path, string $theme = '', ?bool $secure = null): string
+    {
+        if (empty($theme)) {
+            $theme = system_setting('theme', 'default');
+        }
+
+        // Remove possible extensions
+        $path = str_replace(['.scss', '.css'], '', $path);
+
+        // Priority 1: Theme compiled CSS file
+        $themeCssPath = "static/themes/{$theme}/css/{$path}.css";
+        $themeCssFile = public_path($themeCssPath);
+
+        // Priority 2: Default frontend compiled CSS file
+        $defaultCssPath = "build/front/css/{$path}.css";
+        $defaultCssFile = public_path($defaultCssPath);
+
+        if (file_exists($themeCssFile)) {
+            return app('url')->asset($themeCssPath, $secure);
+        } elseif (file_exists($defaultCssFile)) {
+            return app('url')->asset($defaultCssPath, $secure);
+        }
+
+        // If compiled file doesn't exist, return empty string
+        return '';
+    }
+}
+
+if (! function_exists('theme_js')) {
+    /**
+     * Smart theme JS loading
+     * Priority: Theme compiled JS > Default frontend compiled JS
+     *
+     * @param  string  $path  JS file path (supports 'app')
+     * @param  string  $theme  Theme name (default from system settings)
+     * @param  bool|null  $secure  Whether to use HTTPS
+     * @return string JS file URL
+     */
+    function theme_js(string $path, string $theme = '', ?bool $secure = null): string
+    {
+        if (empty($theme)) {
+            $theme = system_setting('theme', 'default');
+        }
+
+        // Remove possible extensions
+        $path = str_replace('.js', '', $path);
+
+        // Priority 1: Theme compiled JS file
+        $themeJsPath = "static/themes/{$theme}/js/{$path}.js";
+        $themeJsFile = public_path($themeJsPath);
+
+        // Priority 2: Default frontend compiled JS file
+        $defaultJsPath = "build/front/js/{$path}.js";
+        $defaultJsFile = public_path($defaultJsPath);
+
+        if (file_exists($themeJsFile)) {
+            return app('url')->asset($themeJsPath, $secure);
+        } elseif (file_exists($defaultJsFile)) {
+            return app('url')->asset($defaultJsPath, $secure);
+        }
+
+        // If compiled file doesn't exist, return empty string
+        return '';
+    }
+}
+
+if (! function_exists('theme_mix')) {
+    /**
+     * Smart theme resource mix loading
+     * Priority: Theme compiled resources > Default frontend compiled resources
+     *
+     * @param  string  $path  Resource path
+     * @param  string  $theme  Theme name
+     * @return string Resource URL
+     */
+    function theme_mix(string $path, string $theme = ''): string
+    {
+        if (empty($theme)) {
+            $theme = system_setting('theme', 'default');
+        }
+
+        // Priority 1: Theme compiled resources
+        $themeMixPath = "static/themes/{$theme}/{$path}";
+        $themeMixFile = public_path($themeMixPath);
+
+        // Priority 2: Default frontend compiled resources
+        $frontMixPath = "build/front/{$path}";
+        $frontMixFile = public_path($frontMixPath);
+
+        if (file_exists($themeMixFile)) {
+            return asset($themeMixPath);
+        } elseif (file_exists($frontMixFile)) {
+            return asset($frontMixPath);
+        }
+
+        return asset($path);
     }
 }

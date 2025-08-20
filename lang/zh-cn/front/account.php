@@ -10,6 +10,7 @@
 return [
     'account'                        => '个人中心',
     'addresses'                      => '我的地址',
+    'balance_overview'               => '余额概览',
     'cancel_order'                   => '取消订单',
     'cancel_order_confirm'           => '确定要取消这个订单吗？',
     'cancel_order_confirm_btn_close' => '关闭',
@@ -32,7 +33,9 @@ return [
     'signed_failed'                  => '签收失败',
     'signed_success'                 => '签收成功',
     'tip'                            => '提示',
-    'transactions'                   => '我的余额',
+    'transactions'                   => '交易记录',
     'verify_code_error'              => '验证码错误',
     'view_all'                       => '查看全部',
+    'wallet'                         => '我的钱包',
+    'withdrawals'                    => '提现申请',
 ];
